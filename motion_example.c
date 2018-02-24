@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     FreespaceDeviceId device;
     int numIds; // The number of device ID found
     int rc; // Return code
-    struct MultiAxisSensor angVel;
+    struct MultiAxisSensor angPos;
 
     // Flag to indicate that the application should quit
     // Set by the control signal handler
@@ -114,6 +114,7 @@ int main(int argc, char* argv[]) {
     message.dataModeControlV2Request.formatSelect = 0;  // MEOut format 0
     message.dataModeControlV2Request.ff0 = 1;           // Pointer fields
     message.dataModeControlV2Request.ff3 = 1;           // Angular velocity fields
+    message.dataModeControlV2Request.ff6 = 1;
     
     rc = freespace_sendMessage(device, &message);
     if (rc != FREESPACE_SUCCESS) {
@@ -139,9 +140,9 @@ int main(int argc, char* argv[]) {
 
         // freespace_printMessage(stdout, &message); // This just prints the basic message fields
         if (message.messageType == FREESPACE_MESSAGE_MOTIONENGINEOUTPUT) {
-            rc = freespace_util_getAngularVelocity(&message.motionEngineOutput, &angVel);
+            rc = freespace_util_getAngPos(&message.motionEngineOutput, &angPos);
             if (rc == 0) {
-                printf ("X: % 6.2f, Y: % 6.2f, Z: % 6.2f\n", angVel.x, angVel.y, angVel.z);
+                printf ("X: % 6.2f, Y: % 6.2f, Z: % 6.2f\n", angPos.x, angPos.y, angPos.z);
             }
         }
     }
