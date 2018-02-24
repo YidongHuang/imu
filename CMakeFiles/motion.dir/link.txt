@@ -1,0 +1,1 @@
+/usr/bin/cc     CMakeFiles/motion.dir/motion_example.c.o CMakeFiles/motion.dir/appControlHandler.c.o  -o motion  -L/home/nvidia/imu/src/.. -rdynamic -lfreespace -lm -Wl,-rpath,/home/nvidia/imu/src/.. 
