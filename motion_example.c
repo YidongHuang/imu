@@ -44,8 +44,20 @@
 #include <freespace/freespace_util.h>
 #include <freespace/freespace_printers.h>
 #include "appControlHandler.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <time.h>
+#include <math.h>
 
 #include <string.h>
+
+#define DEFAULT_BUFLEN 1024
+#define DEFAULT_PORT 5000
 
 /**
  * main
@@ -61,7 +73,7 @@ int main(int argc, char* argv[]) {
     FreespaceDeviceId device;
     int numIds; // The number of device ID found
     int rc; // Return code
-    struct MultiAxisSensor angVel;
+    struct MultiAxisSensor angPos;
 
     // Flag to indicate that the application should quit
     // Set by the control signal handler
@@ -107,22 +119,47 @@ int main(int argc, char* argv[]) {
     // Configure the device for motion outputs
     printf("Sending message to enable motion data.\n");
     memset(&message, 0, sizeof(message)); // Make sure all the message fields are initialized to 0.
-
+    
     message.messageType = FREESPACE_MESSAGE_DATAMODECONTROLV2REQUEST;
     message.dataModeControlV2Request.packetSelect = 8;  // MotionEngine Outout
     message.dataModeControlV2Request.mode = 0;          // Set full motion
     message.dataModeControlV2Request.formatSelect = 0;  // MEOut format 0
     message.dataModeControlV2Request.ff0 = 1;           // Pointer fields
     message.dataModeControlV2Request.ff3 = 1;           // Angular velocity fields
+    message.dataModeControlV2Request.ff6 = 1;
     
     rc = freespace_sendMessage(device, &message);
     if (rc != FREESPACE_SUCCESS) {
         printf("Could not send message: %d.\n", rc);
     }
-        
+    
+    // Initial Socket
+    int listenfd = 0, connfd = 0;
+    struct sockaddr_in serv_addr;
+
+    char sendBuff[DEFAULT_BUFLEN];
+    
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    memset(&serv_addr, '0', sizeof(serv_addr));
+    memset(sendBuff, '0', sizeof(sendBuff));
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(DEFAULT_PORT);
+
+    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    
+    listen(listenfd, 1);
+    
     // A loop to read messages
     printf("Listening for messages.\n");
-    while (!quit) {
+   // while (!quit) {
+    int count = 1;
+    //connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
+    while(!quit){
+	connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
+	
+	//count = count + 1;
         rc = freespace_readMessage(device, &message, 100);
         if (rc == FREESPACE_ERROR_TIMEOUT ||
             rc == FREESPACE_ERROR_INTERRUPTED) {
@@ -139,12 +176,31 @@ int main(int argc, char* argv[]) {
 
         // freespace_printMessage(stdout, &message); // This just prints the basic message fields
         if (message.messageType == FREESPACE_MESSAGE_MOTIONENGINEOUTPUT) {
-            rc = freespace_util_getAngularVelocity(&message.motionEngineOutput, &angVel);
+            rc = freespace_util_getAngPos(&message.motionEngineOutput, &angPos);
             if (rc == 0) {
-                printf ("X: % 6.2f, Y: % 6.2f, Z: % 6.2f\n", angVel.x, angVel.y, angVel.z);
+                printf ("X: % 6.2f, Y: % 6.2f, Z: % 6.2f\n", angPos.x, angPos.y, angPos.z);
+		sprintf(&sendBuff, "X:%f, Y:%f, Z:%f\n", angPos.x, angPos.y, angPos.z);
+		send(connfd, sendBuff, strlen(sendBuff), 0);
+		usleep(30);
+		printf("The number of message sent: %d", count);
+		count = count + 1;
+		//sendBuff[0] = 'X';
+		//sendBuff[1] = (char) round(angVel.x * 255);
+		//sendBuff[2] = 'Y';
+		//sendBuff[3] = (char) round(angVel.y * 255);
+		//sendBuff[4] = 'Z';
+		//sendBuff[5] = (char) round(angVel.z * 255);
+
+		//write(connfd, sendBuff, strlen(sendBuff));
+		//send(connfd, sendBuff, strlen(sendBuff), 0);
+		//sleep(1);
             }
         }
+
+	close(connfd);
     }
+
+    //close(connfd);
 
     // Close communications with the device
     printf("Cleaning up...\n");

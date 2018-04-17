@@ -43,6 +43,24 @@ freespace/freespace_printers.h
 -
 appControlHandler.h
 /home/nvidia/imu/src/appControlHandler.h
+sys/socket.h
+-
+netinet/in.h
+-
+arpa/inet.h
+-
+stdlib.h
+-
+stdio.h
+-
+errno.h
+-
+sys/types.h
+-
+time.h
+-
+math.h
+-
 string.h
 -
 
