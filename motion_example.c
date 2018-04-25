@@ -57,7 +57,7 @@
 #include <string.h>
 
 #define DEFAULT_BUFLEN 1024
-#define DEFAULT_PORT 5000
+#define DEFAULT_PORT 5001
 
 /**
  * main
@@ -178,22 +178,12 @@ int main(int argc, char* argv[]) {
         if (message.messageType == FREESPACE_MESSAGE_MOTIONENGINEOUTPUT) {
             rc = freespace_util_getAngPos(&message.motionEngineOutput, &angPos);
             if (rc == 0) {
-                printf ("X: % 6.2f, Y: % 6.2f, Z: % 6.2f\n", angPos.x, angPos.y, angPos.z);
-		sprintf(&sendBuff, "X:%f, Y:%f, Z:%f\n", angPos.x, angPos.y, angPos.z);
+                printf ("W: % 6.2f, X: % 6.2f, Y: % 6.2f, Z: % 6.2f\n", angPos.w, angPos.x, angPos.y, angPos.z);
+		sprintf(&sendBuff, "%6.2f%6.2f%6.2f%6.2f\n", angPos.w, angPos.x, angPos.y, angPos.z);
 		send(connfd, sendBuff, strlen(sendBuff), 0);
-		usleep(30);
-		printf("The number of message sent: %d", count);
+		usleep(10);
+		printf("The number of message sent: %d\n", count);
 		count = count + 1;
-		//sendBuff[0] = 'X';
-		//sendBuff[1] = (char) round(angVel.x * 255);
-		//sendBuff[2] = 'Y';
-		//sendBuff[3] = (char) round(angVel.y * 255);
-		//sendBuff[4] = 'Z';
-		//sendBuff[5] = (char) round(angVel.z * 255);
-
-		//write(connfd, sendBuff, strlen(sendBuff));
-		//send(connfd, sendBuff, strlen(sendBuff), 0);
-		//sleep(1);
             }
         }
 
