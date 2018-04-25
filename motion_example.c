@@ -190,7 +190,6 @@ int main(int argc, char* argv[]) {
 	close(connfd);
     }
 
-    //close(connfd);
 
     // Close communications with the device
     printf("Cleaning up...\n");
